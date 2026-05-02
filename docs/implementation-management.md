@@ -111,10 +111,10 @@ npm run test:e2e
 
 ## 9. 初期化チェックリスト（リポジトリ運用開始）
 
-- [ ] `README.md` にプロジェクト概要・起動方法・開発方針を記載
-- [ ] `docs/implementation-management.md` を追加
-- [ ] 開発ルール（型先行、純粋関数、JSON外出し）を明文化
-- [ ] 初回コミットを作成
+- [x] `README.md` にプロジェクト概要・起動方法・開発方針を記載
+- [x] `docs/implementation-management.md` を追加
+- [x] 開発ルール（型先行、純粋関数、JSON外出し）を明文化
+- [x] 初回コミットを作成
 - [ ] メインブランチ保護/PRベース運用を開始
 
 ---
