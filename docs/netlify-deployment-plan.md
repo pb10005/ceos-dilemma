@@ -53,3 +53,8 @@ Netlify Site settings > Build & deploy で次を設定。
 - Production URL でトップページとゲームページが表示できる。
 - PRごとに Deploy Preview URL が自動生成される。
 - 直近3回連続でデプロイ成功。
+
+
+## 10. セキュリティ運用（Next.js）
+- Netlifyでブロックされる脆弱版を避けるため、`next` は脆弱性修正版へ随時更新する。
+- 依存更新時は `npm run build` と品質ゲートを再実行してから `main` へマージする。
