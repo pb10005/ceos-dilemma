@@ -1,0 +1,22 @@
+[
+  {"term":"売上高","definition":"商品・サービス販売で得た収益。"},
+  {"term":"売上原価","definition":"販売した商品の原価。"},
+  {"term":"粗利益","definition":"売上高から売上原価を引いた利益。"},
+  {"term":"営業利益","definition":"本業の利益。"},
+  {"term":"純利益","definition":"最終的に会社に残る利益。"},
+  {"term":"営業CF","definition":"営業活動で増減する現金。"},
+  {"term":"投資CF","definition":"設備投資等で増減する現金。"},
+  {"term":"財務CF","definition":"借入や増資で増減する現金。"},
+  {"term":"BS","definition":"貸借対照表。資産・負債・純資産の状態。"},
+  {"term":"PL","definition":"損益計算書。一定期間の収益と費用。"},
+  {"term":"CF","definition":"キャッシュフロー計算書。現金の流れ。"},
+  {"term":"在庫回転","definition":"在庫がどれだけ効率的に売れたか。"},
+  {"term":"希薄化","definition":"増資で1株あたり価値が薄まること。"},
+  {"term":"バリュエーション","definition":"企業価値評価額。"},
+  {"term":"市場シェア","definition":"市場全体に占める売上比率。"},
+  {"term":"フリーCF","definition":"事業維持後に自由に使える現金。"},
+  {"term":"EBITDA","definition":"利払い・税・償却前利益。"},
+  {"term":"PMI","definition":"M&A後の統合作業。"},
+  {"term":"のれん","definition":"買収時に純資産を上回る支払額。"},
+  {"term":"資金繰り","definition":"現金不足を起こさない運用。"}
+]

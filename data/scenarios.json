@@ -1,0 +1,11 @@
+{
+  "id": "d2c_tutorial",
+  "name": "D2Cブランドを黒字化せよ",
+  "durationQuarters": 12,
+  "goals": {
+    "operatingProfitPositive": true,
+    "minCash": 10000000,
+    "minCumulativeRevenue": 200000000
+  },
+  "guidedQuarters": [1, 2, 3]
+}
