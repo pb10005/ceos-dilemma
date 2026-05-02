@@ -17,6 +17,22 @@ import type { FinancialStatements as FS } from '@/types/finance'
 const initialDecisions: Decisions = { adSpend: 300000, productionUnits: 3000, hireCount: 0, rAndDSpend: 200000, price: 5000, raiseEquity: false, borrowDebt: 0, repayDebt: 0 }
 const blankStatements: FS = { pl: { revenue: 0, cogs: 0, grossProfit: 0, payroll: 0, adSpend: 0, rAndD: 0, operatingProfit: 0, interestExpense: 0, netIncome: 0 }, bs: { cash: initialState.cash, inventory: 0, assets: initialState.cash, debt: initialState.debt, equity: initialState.valuation }, cf: { operatingCashFlow: 0, investingCashFlow: 0, financingCashFlow: 0, netCashFlow: 0 } }
 
+const toSafeInt = (value: number, fallback = 0): number => {
+  if (!Number.isFinite(value)) return fallback
+  return Math.trunc(value)
+}
+
+const sanitizeDecisions = (draft: Decisions): Decisions => ({
+  ...draft,
+  adSpend: Math.max(0, toSafeInt(draft.adSpend)),
+  productionUnits: Math.max(0, toSafeInt(draft.productionUnits)),
+  hireCount: toSafeInt(draft.hireCount),
+  rAndDSpend: Math.max(0, toSafeInt(draft.rAndDSpend)),
+  price: Math.max(100, toSafeInt(draft.price, 5000)),
+  borrowDebt: Math.max(0, toSafeInt(draft.borrowDebt)),
+  repayDebt: Math.max(0, toSafeInt(draft.repayDebt))
+})
+
 export default function Dashboard() {
   const [state, setState] = useState(initialState as CompanyState)
   const [decisions, setDecisions] = useState(initialDecisions as Decisions)
@@ -26,7 +42,9 @@ export default function Dashboard() {
   const currentEvent = useMemo(() => events[(state.quarter - 1) % events.length], [state.quarter])
 
   const nextTurn = () => {
-    const result = processTurn(state, decisions, currentEvent)
+    if (state.isGameOver) return
+
+    const result = processTurn(state, sanitizeDecisions(decisions), currentEvent)
     setState(result.nextState)
     setStatements(result.statements)
     setLogs((prev: GameLogEntry[]) => [...prev, result.log])
@@ -36,7 +54,7 @@ export default function Dashboard() {
     <section className="grid gap-4 md:grid-cols-2">
       <KPIBoard quarter={state.quarter} cash={state.cash} revenue={state.revenue} debt={state.debt} valuation={state.valuation} />
       <EventCard event={currentEvent} />
-      <DecisionPanel decisions={decisions} onChange={setDecisions} onNextTurn={nextTurn} />
+      <DecisionPanel decisions={decisions} onChange={(next) => setDecisions(sanitizeDecisions(next))} onNextTurn={nextTurn} />
       <FinancialStatements statements={statements} />
       <TutorialPanel quarter={state.quarter} />
       <GameLog logs={logs} />
