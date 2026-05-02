@@ -1,0 +1,18 @@
+{
+  "quarter": 1,
+  "cash": 50000000,
+  "revenue": 0,
+  "inventory": 5000,
+  "debt": 0,
+  "equityRaised": 0,
+  "sharesOutstanding": 100000,
+  "valuation": 200000000,
+  "employees": 8,
+  "brandPower": 20,
+  "productQuality": 60,
+  "supplyStability": 70,
+  "marketShare": 1,
+  "customerBase": 1000,
+  "cumulativeProfit": 0,
+  "isGameOver": false
+}
