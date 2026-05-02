@@ -52,3 +52,9 @@ npm run test:e2e
 1. Playwright への移行（現状は Node ベースE2E）
 2. レスポンシブ詳細調整（モバイル時の情報密度最適化）
 3. 表示フォーマット共通化（通貨・比率フォーマッタの集約）
+
+
+## デプロイ計画
+- Netlifyデプロイ計画を `docs/netlify-deployment-plan.md` に追加
+- 初回は手動セットアップ後、`main` マージで自動デプロイ運用へ移行
+- PRごとに Deploy Preview を有効化し、UIレビューをURLで実施
