@@ -15,3 +15,9 @@ declare module 'next/link' {
   const Link: (props: any) => any
   export default Link
 }
+
+
+declare module 'react' {
+  export const useState: any
+  export const useMemo: any
+}
