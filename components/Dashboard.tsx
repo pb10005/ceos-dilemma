@@ -9,10 +9,11 @@ import GameLog from './GameLog'
 import TutorialPanel from './TutorialPanel'
 import initialState from '@/data/initialCompany.json'
 import events from '@/data/eventCards.json'
+import scenarios from '@/data/scenarios.json'
 import { processTurn } from '@/lib/gameEngine'
 import { getNextTurnRiskHint } from '@/lib/gameEngine'
 import { calculateMultiAxisScore } from '@/lib/finance'
-import type { CompanyState, EventCard as GameEventCard, GameLogEntry } from '@/types/game'
+import type { CompanyState, EventCard as GameEventCard, GameLogEntry, StrategyCoefficients } from '@/types/game'
 import type { Decisions } from '@/types/decision'
 import type { FinancialStatements as FS } from '@/types/finance'
 
@@ -40,10 +41,17 @@ export default function Dashboard() {
   const [decisions, setDecisions] = useState(initialDecisions as Decisions)
   const [statements, setStatements] = useState(blankStatements as FS)
   const [logs, setLogs] = useState([] as GameLogEntry[])
+  const [selectedStrategyId, setSelectedStrategyId] = useState('balanced')
   const eventCards = events as GameEventCard[]
+  const strategies = scenarios.strategies as StrategyCoefficients[]
 
   const currentEvent = useMemo(() => eventCards[(state.quarter - 1) % eventCards.length], [eventCards, state.quarter])
   const nextRiskHint = useMemo(() => getNextTurnRiskHint(eventCards, state.quarter), [eventCards, state.quarter])
+  const selectedStrategy = useMemo(
+    () => strategies.find((strategy) => strategy.id === selectedStrategyId) ?? strategies[0],
+    [selectedStrategyId, strategies]
+  )
+
   const multiAxisScore = useMemo(() => calculateMultiAxisScore({
     revenueGrowthRate: state.revenue <= 0 ? 0 : (statements.pl.revenue - state.revenue) / Math.max(state.revenue, 1),
     debtToAssetRatio: statements.bs.assets <= 0 ? 1 : statements.bs.debt / statements.bs.assets,
@@ -54,7 +62,7 @@ export default function Dashboard() {
   const nextTurn = () => {
     if (state.isGameOver) return
 
-    const result = processTurn(state, sanitizeDecisions(decisions), currentEvent)
+    const result = processTurn(state, sanitizeDecisions(decisions), currentEvent, selectedStrategy)
     setState(result.nextState)
     setStatements(result.statements)
     setLogs((prev: GameLogEntry[]) => [...prev, result.log])
@@ -71,7 +79,14 @@ export default function Dashboard() {
           <p className="mt-1 text-xs text-amber-200">リスク帯: {nextRiskHint.riskBand} / 影響領域: {nextRiskHint.impactArea}</p>
         </div>
       )}
-      <DecisionPanel decisions={decisions} onChange={(next) => setDecisions(sanitizeDecisions(next))} onNextTurn={nextTurn} />
+      <DecisionPanel
+        decisions={decisions}
+        onChange={(next) => setDecisions(sanitizeDecisions(next))}
+        onNextTurn={nextTurn}
+        strategies={strategies}
+        selectedStrategyId={selectedStrategyId}
+        onStrategyChange={setSelectedStrategyId}
+      />
       <FinancialStatements statements={statements} />
       <TutorialPanel quarter={state.quarter} />
       <GameLog logs={logs} />
