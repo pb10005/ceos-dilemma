@@ -1,6 +1,7 @@
-import type { GameLogEntry } from '@/types/game'
+import type { GameLogEntry, EventCard as GameEventCard } from '@/types/game'
+import { CategoryIcon } from '@/components/icons'
 
-export default function GameLog({ logs }: { logs: GameLogEntry[] }) {
+export default function GameLog({ logs, eventCards }: { logs: GameLogEntry[]; eventCards: GameEventCard[] }) {
   const entries = logs.slice(-8).reverse()
 
   return (
@@ -10,18 +11,22 @@ export default function GameLog({ logs }: { logs: GameLogEntry[] }) {
         <p className="text-sm text-slate-400">四半期を進めるとログが表示されます。</p>
       ) : (
         <ul className="space-y-2">
-          {entries.map((log, idx) => (
-            <li key={`${log.quarter}-${idx}`} className="rounded-lg border border-slate-700 bg-slate-800/60 p-3">
-              <div className="flex items-center gap-2">
-                <span className="rounded bg-slate-700 px-1.5 py-0.5 text-xs font-bold text-emerald-300">Q{log.quarter}</span>
-                <span className="text-sm font-medium text-slate-100">{log.eventTitle}</span>
-              </div>
-              <p className="mt-1 text-xs text-slate-300">{log.summary}</p>
-              {log.learningPoint && (
-                <p className="mt-1 text-xs text-emerald-400/80">学習: {log.learningPoint}</p>
-              )}
-            </li>
-          ))}
+          {entries.map((log, idx) => {
+            const event = eventCards.find((e) => e.id === log.eventId)
+            return (
+              <li key={`${log.quarter}-${idx}`} className="rounded-lg border border-slate-700 bg-slate-800/60 p-3">
+                <div className="flex items-center gap-2">
+                  <span className="rounded bg-slate-700 px-1.5 py-0.5 text-xs font-bold text-emerald-300">Q{log.quarter}</span>
+                  {event && <CategoryIcon category={event.category} className="h-3 w-3 text-slate-400" />}
+                  <span className="text-sm font-medium text-slate-100">{log.eventTitle}</span>
+                </div>
+                <p className="mt-1 text-xs text-slate-300">{log.summary}</p>
+                {log.learningPoint && (
+                  <p className="mt-1 text-xs text-emerald-400/80">学習: {log.learningPoint}</p>
+                )}
+              </li>
+            )
+          })}
         </ul>
       )}
     </div>
