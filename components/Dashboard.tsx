@@ -20,6 +20,7 @@ import type { FinancialStatements as FS } from '@/types/finance'
 
 type QuarterlyStatement = { quarter: number; statements: FS }
 type IndustryProfile = { id: string; label: string; description: string; stateOverrides: Partial<CompanyState> }
+type TabId = 'status' | 'decision' | 'history'
 
 const initialDecisions: Decisions = { adSpend: 300000, productionUnits: 3000, hireCount: 0, rAndDSpend: 200000, price: 5000, raiseEquity: false, borrowDebt: 0, repayDebt: 0 }
 const industryProfiles: IndustryProfile[] = [
@@ -55,6 +56,12 @@ const sanitizeDecisions = (draft: Decisions): Decisions => ({
   repayDebt: Math.max(0, toSafeInt(draft.repayDebt))
 })
 
+const tabs: { id: TabId; label: string }[] = [
+  { id: 'status', label: '状況' },
+  { id: 'decision', label: '意思決定' },
+  { id: 'history', label: '履歴・財務' },
+]
+
 export default function Dashboard() {
   const [selectedIndustryId, setSelectedIndustryId] = useState(industryProfiles[0].id)
   const [state, setState] = useState(() => createInitialCompanyState(industryProfiles[0].id))
@@ -63,6 +70,7 @@ export default function Dashboard() {
   const [logs, setLogs] = useState([] as GameLogEntry[])
   const [statementHistory, setStatementHistory] = useState([] as QuarterlyStatement[])
   const [selectedStrategyId, setSelectedStrategyId] = useState('balanced')
+  const [activeTab, setActiveTab] = useState('status' as TabId)
   const eventCards = events as GameEventCard[]
   const strategies = scenarios.strategies as StrategyCoefficients[]
 
@@ -150,64 +158,156 @@ export default function Dashboard() {
     setStatementHistory((prev: QuarterlyStatement[]) => [...prev, { quarter: result.log.quarter, statements: result.statements }])
   }
 
-  return (
-    <section className="grid gap-4 md:grid-cols-2">
-      <div className="rounded-xl border border-slate-700 bg-slate-900 p-4 md:col-span-2">
-        <h2 className="mb-3 text-lg font-semibold">業種プリセット</h2>
-        <div className="mb-2 flex flex-wrap gap-2">
-          {industryProfiles.map((profile) => (
-            <button
-              key={profile.id}
-              type="button"
-              onClick={() => resetGame(profile.id)}
-              className={`rounded-md px-3 py-1 text-sm ${profile.id === selectedIndustryId ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-200'}`}
-            >
-              {profile.label}
-            </button>
-          ))}
-        </div>
-        <p className="text-sm text-slate-300">現在の業種: {selectedIndustry.label} — {selectedIndustry.description}</p>
+  const industryPreset = (
+    <div className="rounded-xl border border-slate-700 bg-slate-900 p-4 md:col-span-2">
+      <h2 className="mb-3 text-lg font-semibold">業種プリセット</h2>
+      <div className="mb-2 flex flex-wrap gap-2">
+        {industryProfiles.map((profile) => (
+          <button
+            key={profile.id}
+            type="button"
+            onClick={() => resetGame(profile.id)}
+            className={`rounded-md px-3 py-1 text-sm ${profile.id === selectedIndustryId ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-200'}`}
+          >
+            {profile.label}
+          </button>
+        ))}
       </div>
-      <KPIBoard quarter={state.quarter} cash={state.cash} revenue={state.revenue} debt={state.debt} valuation={state.valuation} />
-      <EventCard event={currentEvent} />
-      {nextRiskHint && (
-        <div className="rounded-xl border border-amber-700 bg-amber-950/40 p-4 text-sm">
-          <h2 className="mb-1 text-lg font-semibold text-amber-300">次ターンリスク予兆</h2>
-          <p className="text-amber-100">{nextRiskHint.hint}</p>
-          <p className="mt-1 text-xs text-amber-200">リスク帯: {nextRiskHint.riskBand} / 影響領域: {nextRiskHint.impactArea}</p>
-        </div>
-      )}
-      <DecisionPanel
-        decisions={decisions}
-        onChange={(next) => setDecisions(sanitizeDecisions(next))}
-        onNextTurn={nextTurn}
-        strategies={strategies}
-        selectedStrategyId={selectedStrategyId}
-        onStrategyChange={setSelectedStrategyId}
-      />
-      <FinancialStatements statements={statements} annualReports={annualReports} />
+      <p className="text-sm text-slate-300">現在の業種: {selectedIndustry.label} — {selectedIndustry.description}</p>
+    </div>
+  )
 
-      <div className="rounded-xl border border-slate-700 bg-slate-900 p-4 md:col-span-2">
-        <h2 className="mb-3 text-lg font-semibold">経営状況の可視化</h2>
-        <div className="grid gap-3 md:grid-cols-3">
-          <TrendChart title="売上推移" points={trendPoints.revenue} tone="cyan" />
-          <TrendChart title="純利益推移" points={trendPoints.netIncome} tone="emerald" />
-          <TrendChart title="現金残高推移" points={trendPoints.cash} tone="violet" />
-        </div>
-      </div>
-
-      <TutorialPanel quarter={state.quarter} />
-      <GameLog logs={logs} />
-      {state.quarter > 12 && (
-        <div className="rounded-xl border border-slate-700 bg-slate-900 p-4 text-sm md:col-span-2">
-          <h2 className="mb-2 text-lg font-semibold">4軸スコア</h2>
-          <p>成長: {multiAxisScore.growth} / 安定: {multiAxisScore.stability} / 収益: {multiAxisScore.profitability} / 学習: {multiAxisScore.learning}</p>
-        </div>
-      )}
+  const alertsSection = (
+    <>
       {state.bankWarning && (
         <div className="rounded-xl border border-yellow-700 bg-yellow-950/40 p-4 text-sm text-yellow-100 md:col-span-2">{state.bankWarning}</div>
       )}
       {state.isGameOver && <div className="rounded bg-red-900 p-3 text-sm text-red-100 md:col-span-2">Game Over: {state.gameOverReason}</div>}
-    </section>
+    </>
+  )
+
+  return (
+    <>
+      {/* モバイルタブナビゲーション */}
+      <div className="md:hidden">
+        {/* 業種プリセット（常時表示） */}
+        <div className="mb-4">{industryPreset}</div>
+
+        {/* アラート（常時表示） */}
+        <div className="mb-4 space-y-2">{alertsSection}</div>
+
+        {/* タブバー */}
+        <div className="mb-4 flex rounded-xl border border-slate-700 bg-slate-900 p-1">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${
+                activeTab === tab.id
+                  ? 'bg-slate-700 text-white'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* 状況タブ */}
+        {activeTab === 'status' && (
+          <div className="space-y-4">
+            <KPIBoard quarter={state.quarter} cash={state.cash} revenue={state.revenue} debt={state.debt} valuation={state.valuation} />
+            <EventCard event={currentEvent} />
+            {nextRiskHint && (
+              <div className="rounded-xl border border-amber-700 bg-amber-950/40 p-4 text-sm">
+                <h2 className="mb-1 text-lg font-semibold text-amber-300">次ターンリスク予兆</h2>
+                <p className="text-amber-100">{nextRiskHint.hint}</p>
+                <p className="mt-1 text-xs text-amber-200">リスク帯: {nextRiskHint.riskBand} / 影響領域: {nextRiskHint.impactArea}</p>
+              </div>
+            )}
+            <div className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+              <h2 className="mb-3 text-lg font-semibold">経営状況の可視化</h2>
+              <div className="space-y-3">
+                <TrendChart title="売上推移" points={trendPoints.revenue} tone="cyan" />
+                <TrendChart title="純利益推移" points={trendPoints.netIncome} tone="emerald" />
+                <TrendChart title="現金残高推移" points={trendPoints.cash} tone="violet" />
+              </div>
+            </div>
+            <TutorialPanel quarter={state.quarter} />
+          </div>
+        )}
+
+        {/* 意思決定タブ */}
+        {activeTab === 'decision' && (
+          <div className="space-y-4">
+            <DecisionPanel
+              decisions={decisions}
+              onChange={(next) => setDecisions(sanitizeDecisions(next))}
+              onNextTurn={nextTurn}
+              strategies={strategies}
+              selectedStrategyId={selectedStrategyId}
+              onStrategyChange={setSelectedStrategyId}
+            />
+          </div>
+        )}
+
+        {/* 履歴・財務タブ */}
+        {activeTab === 'history' && (
+          <div className="space-y-4">
+            <GameLog logs={logs} />
+            <FinancialStatements statements={statements} annualReports={annualReports} />
+            {state.quarter > 12 && (
+              <div className="rounded-xl border border-slate-700 bg-slate-900 p-4 text-sm">
+                <h2 className="mb-2 text-lg font-semibold">4軸スコア</h2>
+                <p>成長: {multiAxisScore.growth} / 安定: {multiAxisScore.stability} / 収益: {multiAxisScore.profitability} / 学習: {multiAxisScore.learning}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* デスクトップレイアウト（md:以上） */}
+      <section className="hidden gap-4 md:grid md:grid-cols-2">
+        {industryPreset}
+        <KPIBoard quarter={state.quarter} cash={state.cash} revenue={state.revenue} debt={state.debt} valuation={state.valuation} />
+        <EventCard event={currentEvent} />
+        {nextRiskHint && (
+          <div className="rounded-xl border border-amber-700 bg-amber-950/40 p-4 text-sm">
+            <h2 className="mb-1 text-lg font-semibold text-amber-300">次ターンリスク予兆</h2>
+            <p className="text-amber-100">{nextRiskHint.hint}</p>
+            <p className="mt-1 text-xs text-amber-200">リスク帯: {nextRiskHint.riskBand} / 影響領域: {nextRiskHint.impactArea}</p>
+          </div>
+        )}
+        <DecisionPanel
+          decisions={decisions}
+          onChange={(next) => setDecisions(sanitizeDecisions(next))}
+          onNextTurn={nextTurn}
+          strategies={strategies}
+          selectedStrategyId={selectedStrategyId}
+          onStrategyChange={setSelectedStrategyId}
+        />
+        <FinancialStatements statements={statements} annualReports={annualReports} />
+
+        <div className="rounded-xl border border-slate-700 bg-slate-900 p-4 md:col-span-2">
+          <h2 className="mb-3 text-lg font-semibold">経営状況の可視化</h2>
+          <div className="grid gap-3 md:grid-cols-3">
+            <TrendChart title="売上推移" points={trendPoints.revenue} tone="cyan" />
+            <TrendChart title="純利益推移" points={trendPoints.netIncome} tone="emerald" />
+            <TrendChart title="現金残高推移" points={trendPoints.cash} tone="violet" />
+          </div>
+        </div>
+
+        <TutorialPanel quarter={state.quarter} />
+        <GameLog logs={logs} />
+        {state.quarter > 12 && (
+          <div className="rounded-xl border border-slate-700 bg-slate-900 p-4 text-sm md:col-span-2">
+            <h2 className="mb-2 text-lg font-semibold">4軸スコア</h2>
+            <p>成長: {multiAxisScore.growth} / 安定: {multiAxisScore.stability} / 収益: {multiAxisScore.profitability} / 学習: {multiAxisScore.learning}</p>
+          </div>
+        )}
+        {alertsSection}
+      </section>
+    </>
   )
 }
