@@ -117,9 +117,9 @@ export default function Dashboard() {
 
 
   const trendPoints = useMemo(() => ({
-    revenue: statementHistory.map((entry) => ({ quarter: entry.quarter, value: entry.statements.pl.revenue })),
-    netIncome: statementHistory.map((entry) => ({ quarter: entry.quarter, value: entry.statements.pl.netIncome })),
-    cash: statementHistory.map((entry) => ({ quarter: entry.quarter, value: entry.statements.bs.cash }))
+    revenue: statementHistory.map((entry: QuarterlyStatement) => ({ quarter: entry.quarter, value: entry.statements.pl.revenue })),
+    netIncome: statementHistory.map((entry: QuarterlyStatement) => ({ quarter: entry.quarter, value: entry.statements.pl.netIncome })),
+    cash: statementHistory.map((entry: QuarterlyStatement) => ({ quarter: entry.quarter, value: entry.statements.bs.cash }))
   }), [statementHistory])
 
   const multiAxisScore = useMemo(() => calculateMultiAxisScore({
