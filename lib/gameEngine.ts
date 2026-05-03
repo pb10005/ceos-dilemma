@@ -1,4 +1,5 @@
 import type { CompanyState, EventCard, GameLogEntry } from '@/types/game'
+import type { EventHint } from '@/types/game'
 import type { Decisions } from '@/types/decision'
 import type { FinancialStatements } from '@/types/finance'
 import {
@@ -87,4 +88,17 @@ export const processTurn = (
   }
 
   return { nextState, statements, log }
+}
+
+export const getNextTurnRiskHint = (events: EventCard[], currentQuarter: number): EventHint | null => {
+  if (!events.length) return null
+  const nextEvent = events[currentQuarter % events.length]
+  if (!nextEvent?.hint || !nextEvent.riskBand || !nextEvent.impactArea) return null
+
+  return {
+    nextEventId: nextEvent.id,
+    hint: nextEvent.hint,
+    riskBand: nextEvent.riskBand,
+    impactArea: nextEvent.impactArea
+  }
 }

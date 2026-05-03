@@ -10,7 +10,9 @@ import TutorialPanel from './TutorialPanel'
 import initialState from '@/data/initialCompany.json'
 import events from '@/data/eventCards.json'
 import { processTurn } from '@/lib/gameEngine'
-import type { CompanyState, GameLogEntry } from '@/types/game'
+import { getNextTurnRiskHint } from '@/lib/gameEngine'
+import { calculateMultiAxisScore } from '@/lib/finance'
+import type { CompanyState, EventCard as GameEventCard, GameLogEntry } from '@/types/game'
 import type { Decisions } from '@/types/decision'
 import type { FinancialStatements as FS } from '@/types/finance'
 
@@ -38,8 +40,16 @@ export default function Dashboard() {
   const [decisions, setDecisions] = useState(initialDecisions as Decisions)
   const [statements, setStatements] = useState(blankStatements as FS)
   const [logs, setLogs] = useState([] as GameLogEntry[])
+  const eventCards = events as GameEventCard[]
 
-  const currentEvent = useMemo(() => events[(state.quarter - 1) % events.length], [state.quarter])
+  const currentEvent = useMemo(() => eventCards[(state.quarter - 1) % eventCards.length], [eventCards, state.quarter])
+  const nextRiskHint = useMemo(() => getNextTurnRiskHint(eventCards, state.quarter), [eventCards, state.quarter])
+  const multiAxisScore = useMemo(() => calculateMultiAxisScore({
+    revenueGrowthRate: state.revenue <= 0 ? 0 : (statements.pl.revenue - state.revenue) / Math.max(state.revenue, 1),
+    debtToAssetRatio: statements.bs.assets <= 0 ? 1 : statements.bs.debt / statements.bs.assets,
+    operatingMargin: statements.pl.revenue <= 0 ? 0 : statements.pl.operatingProfit / statements.pl.revenue,
+    decisionQuality: Math.min(1, logs.length / 12)
+  }), [logs.length, state.revenue, statements])
 
   const nextTurn = () => {
     if (state.isGameOver) return
@@ -54,10 +64,23 @@ export default function Dashboard() {
     <section className="grid gap-4 md:grid-cols-2">
       <KPIBoard quarter={state.quarter} cash={state.cash} revenue={state.revenue} debt={state.debt} valuation={state.valuation} />
       <EventCard event={currentEvent} />
+      {nextRiskHint && (
+        <div className="rounded-xl border border-amber-700 bg-amber-950/40 p-4 text-sm">
+          <h2 className="mb-1 text-lg font-semibold text-amber-300">次ターンリスク予兆</h2>
+          <p className="text-amber-100">{nextRiskHint.hint}</p>
+          <p className="mt-1 text-xs text-amber-200">リスク帯: {nextRiskHint.riskBand} / 影響領域: {nextRiskHint.impactArea}</p>
+        </div>
+      )}
       <DecisionPanel decisions={decisions} onChange={(next) => setDecisions(sanitizeDecisions(next))} onNextTurn={nextTurn} />
       <FinancialStatements statements={statements} />
       <TutorialPanel quarter={state.quarter} />
       <GameLog logs={logs} />
+      {state.quarter > 12 && (
+        <div className="rounded-xl border border-slate-700 bg-slate-900 p-4 text-sm md:col-span-2">
+          <h2 className="mb-2 text-lg font-semibold">4軸スコア</h2>
+          <p>成長: {multiAxisScore.growth} / 安定: {multiAxisScore.stability} / 収益: {multiAxisScore.profitability} / 学習: {multiAxisScore.learning}</p>
+        </div>
+      )}
       {state.isGameOver && <div className="rounded bg-red-900 p-3 text-sm text-red-100 md:col-span-2">Game Over: {state.gameOverReason}</div>}
     </section>
   )

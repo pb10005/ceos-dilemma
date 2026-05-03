@@ -33,6 +33,16 @@ export type EventCard = {
     brandPowerDelta?: number
   }
   learningPoint: string
+  hint?: string
+  riskBand?: 'low' | 'medium' | 'high'
+  impactArea?: 'demand' | 'cost' | 'finance' | 'brand' | 'operations'
+}
+
+export type EventHint = {
+  nextEventId: string
+  hint: string
+  riskBand: 'low' | 'medium' | 'high'
+  impactArea: 'demand' | 'cost' | 'finance' | 'brand' | 'operations'
 }
 
 export type GameLogEntry = {

@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { processTurn } from '../lib/gameEngine.runtime.mjs'
+import { getNextTurnRiskHint } from '../lib/gameEngine.runtime.mjs'
 import initialState from '../data/initialCompany.json' with { type: 'json' }
 import events from '../data/eventCards.json' with { type: 'json' }
 
@@ -21,4 +22,11 @@ test('processTurn can trigger game over when cash is critically low', () => {
   const { nextState } = processTurn(weakState, decisions, event)
   assert.equal(nextState.isGameOver, true)
   assert.ok(nextState.gameOverReason)
+})
+
+test('next turn hint corresponds to the actual next event', () => {
+  const hint = getNextTurnRiskHint(events, 1)
+  assert.ok(hint)
+  assert.equal(hint.nextEventId, events[1].id)
+  assert.equal(hint.hint, events[1].hint)
 })
