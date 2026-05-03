@@ -1,3 +1,6 @@
+import { Calendar, Banknote, TrendingUp, TrendingDown, Building2 } from '@/components/icons'
+import type { LucideIcon } from '@/components/icons'
+
 type KPIBoardProps = {
   quarter: number
   cash: number
@@ -14,10 +17,23 @@ const cashColor = (cash: number) => {
   return 'text-emerald-300'
 }
 
-function MetricTile({ label, value, valueClass = 'text-slate-100' }: { label: string; value: string; valueClass?: string }) {
+function MetricTile({
+  label,
+  value,
+  valueClass = 'text-slate-100',
+  icon: Icon,
+}: {
+  label: string
+  value: string
+  valueClass?: string
+  icon?: LucideIcon
+}) {
   return (
     <div className="rounded-lg bg-slate-800 px-3 py-2">
-      <p className="text-xs text-slate-400">{label}</p>
+      <div className="flex items-center gap-1.5">
+        {Icon && <Icon className="h-3 w-3 text-slate-400" />}
+        <p className="text-xs text-slate-400">{label}</p>
+      </div>
       <p className={`mt-0.5 text-sm font-semibold leading-tight ${valueClass}`}>{value}</p>
     </div>
   )
@@ -28,12 +44,15 @@ export default function KPIBoard({ quarter, cash, revenue, debt, valuation }: KP
     <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
       <h2 className="mb-3 text-lg font-semibold">KPI</h2>
       <div className="grid grid-cols-2 gap-2">
-        <MetricTile label="四半期" value={`Q${quarter}`} valueClass="text-emerald-300 text-base font-bold" />
-        <MetricTile label="現金" value={yen(cash)} valueClass={cashColor(cash)} />
-        <MetricTile label="売上" value={yen(revenue)} />
-        <MetricTile label="有利子負債" value={yen(debt)} valueClass={debt > 0 ? 'text-amber-300' : 'text-slate-100'} />
+        <MetricTile label="四半期" value={`Q${quarter}`} valueClass="text-emerald-300 text-base font-bold" icon={Calendar} />
+        <MetricTile label="現金" value={yen(cash)} valueClass={cashColor(cash)} icon={Banknote} />
+        <MetricTile label="売上" value={yen(revenue)} icon={TrendingUp} />
+        <MetricTile label="有利子負債" value={yen(debt)} valueClass={debt > 0 ? 'text-amber-300' : 'text-slate-100'} icon={TrendingDown} />
         <div className="col-span-2 rounded-lg bg-slate-800 px-3 py-2">
-          <p className="text-xs text-slate-400">企業価値</p>
+          <div className="flex items-center gap-1.5">
+            <Building2 className="h-3 w-3 text-slate-400" />
+            <p className="text-xs text-slate-400">企業価値</p>
+          </div>
           <p className="mt-0.5 text-sm font-semibold text-violet-300">{yen(valuation)}</p>
         </div>
       </div>

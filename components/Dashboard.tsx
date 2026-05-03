@@ -8,6 +8,8 @@ import KPIBoard from './KPIBoard'
 import GameLog from './GameLog'
 import TutorialPanel from './TutorialPanel'
 import TrendChart from './TrendChart'
+import { BarChart3, Lightbulb, History, Cloud, ShoppingCart, Wrench, AlertTriangle, XCircle } from '@/components/icons'
+import type { LucideIcon } from '@/components/icons'
 import initialState from '@/data/initialCompany.json'
 import events from '@/data/eventCards.json'
 import scenarios from '@/data/scenarios.json'
@@ -19,14 +21,20 @@ import type { Decisions } from '@/types/decision'
 import type { FinancialStatements as FS } from '@/types/finance'
 
 type QuarterlyStatement = { quarter: number; statements: FS }
-type IndustryProfile = { id: string; label: string; description: string; stateOverrides: Partial<CompanyState> }
+type IndustryProfile = { id: string; label: string; description: string; stateOverrides: Partial<CompanyState>; icon: LucideIcon }
 type TabId = 'status' | 'decision' | 'history'
 
 const initialDecisions: Decisions = { adSpend: 300000, productionUnits: 3000, hireCount: 0, rAndDSpend: 200000, price: 5000, raiseEquity: false, borrowDebt: 0, repayDebt: 0 }
 const industryProfiles: IndustryProfile[] = [
-  { id: 'saas', label: 'SaaS', description: '高粗利・成長重視。研究開発とブランド投資の影響が大きい。', stateOverrides: { cash: 40000000, valuation: 240000000, customerBase: 1600, productQuality: 70, inventory: 500, supplyStability: 80 } },
-  { id: 'retail', label: '小売', description: '在庫と供給安定性が収益に直結。需要変動の影響を受けやすい。', stateOverrides: { cash: 60000000, valuation: 180000000, customerBase: 2500, inventory: 11000, supplyStability: 65, brandPower: 24 } },
-  { id: 'manufacturing', label: '製造', description: '設備・在庫・負債管理が重要。供給網ショックに備える。', stateOverrides: { cash: 55000000, valuation: 210000000, customerBase: 1200, inventory: 14000, supplyStability: 72, debt: 20000000 } }
+  { id: 'saas', label: 'SaaS', icon: Cloud, description: '高粗利・成長重視。研究開発とブランド投資の影響が大きい。', stateOverrides: { cash: 40000000, valuation: 240000000, customerBase: 1600, productQuality: 70, inventory: 500, supplyStability: 80 } },
+  { id: 'retail', label: '小売', icon: ShoppingCart, description: '在庫と供給安定性が収益に直結。需要変動の影響を受けやすい。', stateOverrides: { cash: 60000000, valuation: 180000000, customerBase: 2500, inventory: 11000, supplyStability: 65, brandPower: 24 } },
+  { id: 'manufacturing', label: '製造', icon: Wrench, description: '設備・在庫・負債管理が重要。供給網ショックに備える。', stateOverrides: { cash: 55000000, valuation: 210000000, customerBase: 1200, inventory: 14000, supplyStability: 72, debt: 20000000 } }
+]
+
+const tabs: { id: TabId; label: string; icon: LucideIcon }[] = [
+  { id: 'status', label: '状況', icon: BarChart3 },
+  { id: 'decision', label: '意思決定', icon: Lightbulb },
+  { id: 'history', label: '履歴・財務', icon: History },
 ]
 
 const createInitialCompanyState = (profileId: string): CompanyState => {
@@ -55,12 +63,6 @@ const sanitizeDecisions = (draft: Decisions): Decisions => ({
   borrowDebt: Math.max(0, toSafeInt(draft.borrowDebt)),
   repayDebt: Math.max(0, toSafeInt(draft.repayDebt))
 })
-
-const tabs: { id: TabId; label: string }[] = [
-  { id: 'status', label: '状況' },
-  { id: 'decision', label: '意思決定' },
-  { id: 'history', label: '履歴・財務' },
-]
 
 export default function Dashboard() {
   const [selectedIndustryId, setSelectedIndustryId] = useState(industryProfiles[0].id)
@@ -123,7 +125,6 @@ export default function Dashboard() {
       .map(([fiscalYear, values]) => ({ fiscalYear, ...values }))
   }, [statementHistory])
 
-
   const trendPoints = useMemo(() => ({
     revenue: statementHistory.map((entry: QuarterlyStatement) => ({ quarter: entry.quarter, value: entry.statements.pl.revenue })),
     netIncome: statementHistory.map((entry: QuarterlyStatement) => ({ quarter: entry.quarter, value: entry.statements.pl.netIncome })),
@@ -162,16 +163,20 @@ export default function Dashboard() {
     <div className="rounded-xl border border-slate-700 bg-slate-900 p-4 md:col-span-2">
       <h2 className="mb-3 text-lg font-semibold">業種プリセット</h2>
       <div className="mb-2 flex flex-wrap gap-2">
-        {industryProfiles.map((profile) => (
-          <button
-            key={profile.id}
-            type="button"
-            onClick={() => resetGame(profile.id)}
-            className={`rounded-md px-3 py-1 text-sm ${profile.id === selectedIndustryId ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-200'}`}
-          >
-            {profile.label}
-          </button>
-        ))}
+        {industryProfiles.map((profile) => {
+          const ProfileIcon = profile.icon
+          return (
+            <button
+              key={profile.id}
+              type="button"
+              onClick={() => resetGame(profile.id)}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-sm ${profile.id === selectedIndustryId ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-200'}`}
+            >
+              <ProfileIcon className="h-4 w-4" />
+              {profile.label}
+            </button>
+          )
+        })}
       </div>
       <p className="text-sm text-slate-300">現在の業種: {selectedIndustry.label} — {selectedIndustry.description}</p>
     </div>
@@ -180,9 +185,21 @@ export default function Dashboard() {
   const alertsSection = (
     <>
       {state.bankWarning && (
-        <div className="rounded-xl border border-yellow-700 bg-yellow-950/40 p-4 text-sm text-yellow-100 md:col-span-2">{state.bankWarning}</div>
+        <div className="rounded-xl border border-yellow-700 bg-yellow-950/40 p-4 text-sm text-yellow-100 md:col-span-2">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-yellow-200" />
+            <span>{state.bankWarning}</span>
+          </div>
+        </div>
       )}
-      {state.isGameOver && <div className="rounded bg-red-900 p-3 text-sm text-red-100 md:col-span-2">Game Over: {state.gameOverReason}</div>}
+      {state.isGameOver && (
+        <div className="rounded bg-red-900 p-3 text-sm text-red-100 md:col-span-2">
+          <div className="flex items-center gap-2">
+            <XCircle className="h-4 w-4 text-red-400" />
+            <span>Game Over: {state.gameOverReason}</span>
+          </div>
+        </div>
+      )}
     </>
   )
 
@@ -190,38 +207,39 @@ export default function Dashboard() {
     <>
       {/* モバイルタブナビゲーション */}
       <div className="md:hidden">
-        {/* 業種プリセット（常時表示） */}
         <div className="mb-4">{industryPreset}</div>
-
-        {/* アラート（常時表示） */}
         <div className="mb-4 space-y-2">{alertsSection}</div>
 
         {/* タブバー */}
         <div className="mb-4 flex rounded-xl border border-slate-700 bg-slate-900 p-1">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${
-                activeTab === tab.id
-                  ? 'bg-slate-700 text-white'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+          {tabs.map((tab) => {
+            const TabIcon = tab.icon
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium transition-colors ${
+                  activeTab === tab.id ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <TabIcon className="h-4 w-4" />
+                {tab.label}
+              </button>
+            )
+          })}
         </div>
 
-        {/* 状況タブ */}
         {activeTab === 'status' && (
           <div className="space-y-4">
             <KPIBoard quarter={state.quarter} cash={state.cash} revenue={state.revenue} debt={state.debt} valuation={state.valuation} />
             <EventCard event={currentEvent} />
             {nextRiskHint && (
               <div className="rounded-xl border border-amber-700 bg-amber-950/40 p-4 text-sm">
-                <h2 className="mb-1 text-lg font-semibold text-amber-300">次ターンリスク予兆</h2>
+                <div className="mb-1 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-300" />
+                  <h2 className="text-lg font-semibold text-amber-300">次ターンリスク予兆</h2>
+                </div>
                 <p className="text-amber-100">{nextRiskHint.hint}</p>
                 <p className="mt-1 text-xs text-amber-200">リスク帯: {nextRiskHint.riskBand} / 影響領域: {nextRiskHint.impactArea}</p>
               </div>
@@ -238,7 +256,6 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* 意思決定タブ */}
         {activeTab === 'decision' && (
           <div className="space-y-4">
             <DecisionPanel
@@ -252,10 +269,9 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* 履歴・財務タブ */}
         {activeTab === 'history' && (
           <div className="space-y-4">
-            <GameLog logs={logs} />
+            <GameLog logs={logs} eventCards={eventCards} />
             <FinancialStatements statements={statements} annualReports={annualReports} />
             {state.quarter > 12 && (
               <div className="rounded-xl border border-slate-700 bg-slate-900 p-4 text-sm">
@@ -274,7 +290,10 @@ export default function Dashboard() {
         <EventCard event={currentEvent} />
         {nextRiskHint && (
           <div className="rounded-xl border border-amber-700 bg-amber-950/40 p-4 text-sm">
-            <h2 className="mb-1 text-lg font-semibold text-amber-300">次ターンリスク予兆</h2>
+            <div className="mb-1 flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-300" />
+              <h2 className="text-lg font-semibold text-amber-300">次ターンリスク予兆</h2>
+            </div>
             <p className="text-amber-100">{nextRiskHint.hint}</p>
             <p className="mt-1 text-xs text-amber-200">リスク帯: {nextRiskHint.riskBand} / 影響領域: {nextRiskHint.impactArea}</p>
           </div>
@@ -299,7 +318,7 @@ export default function Dashboard() {
         </div>
 
         <TutorialPanel quarter={state.quarter} />
-        <GameLog logs={logs} />
+        <GameLog logs={logs} eventCards={eventCards} />
         {state.quarter > 12 && (
           <div className="rounded-xl border border-slate-700 bg-slate-900 p-4 text-sm md:col-span-2">
             <h2 className="mb-2 text-lg font-semibold">4軸スコア</h2>
