@@ -14,5 +14,6 @@
   "marketShare": 1,
   "customerBase": 1000,
   "cumulativeProfit": 0,
-  "isGameOver": false
+  "isGameOver": false,
+  "consecutiveCashShortageQuarters": 0
 }

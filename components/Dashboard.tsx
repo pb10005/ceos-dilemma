@@ -138,6 +138,9 @@ export default function Dashboard() {
           <p>成長: {multiAxisScore.growth} / 安定: {multiAxisScore.stability} / 収益: {multiAxisScore.profitability} / 学習: {multiAxisScore.learning}</p>
         </div>
       )}
+      {state.bankWarning && (
+        <div className="rounded-xl border border-yellow-700 bg-yellow-950/40 p-4 text-sm text-yellow-100 md:col-span-2">{state.bankWarning}</div>
+      )}
       {state.isGameOver && <div className="rounded bg-red-900 p-3 text-sm text-red-100 md:col-span-2">Game Over: {state.gameOverReason}</div>}
     </section>
   )

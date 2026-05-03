@@ -16,6 +16,8 @@ export type CompanyState = {
   cumulativeProfit: number
   isGameOver: boolean
   gameOverReason?: string
+  consecutiveCashShortageQuarters: number
+  bankWarning?: string
 }
 
 export type EventCategory = 'market' | 'supply' | 'finance' | 'competition' | 'internal'
