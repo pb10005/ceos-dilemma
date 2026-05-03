@@ -9,12 +9,15 @@ import GameLog from './GameLog'
 import TutorialPanel from './TutorialPanel'
 import initialState from '@/data/initialCompany.json'
 import events from '@/data/eventCards.json'
+import scenarios from '@/data/scenarios.json'
 import { processTurn } from '@/lib/gameEngine'
 import { getNextTurnRiskHint } from '@/lib/gameEngine'
 import { calculateMultiAxisScore } from '@/lib/finance'
-import type { CompanyState, EventCard as GameEventCard, GameLogEntry } from '@/types/game'
+import type { CompanyState, EventCard as GameEventCard, GameLogEntry, StrategyCoefficients } from '@/types/game'
 import type { Decisions } from '@/types/decision'
 import type { FinancialStatements as FS } from '@/types/finance'
+
+type QuarterlyStatement = { quarter: number; statements: FS }
 
 const initialDecisions: Decisions = { adSpend: 300000, productionUnits: 3000, hireCount: 0, rAndDSpend: 200000, price: 5000, raiseEquity: false, borrowDebt: 0, repayDebt: 0 }
 const blankStatements: FS = { pl: { revenue: 0, cogs: 0, grossProfit: 0, payroll: 0, adSpend: 0, rAndD: 0, operatingProfit: 0, interestExpense: 0, netIncome: 0 }, bs: { cash: initialState.cash, inventory: 0, assets: initialState.cash, debt: initialState.debt, equity: initialState.valuation }, cf: { operatingCashFlow: 0, investingCashFlow: 0, financingCashFlow: 0, netCashFlow: 0 } }
@@ -40,10 +43,56 @@ export default function Dashboard() {
   const [decisions, setDecisions] = useState(initialDecisions as Decisions)
   const [statements, setStatements] = useState(blankStatements as FS)
   const [logs, setLogs] = useState([] as GameLogEntry[])
+  const [statementHistory, setStatementHistory] = useState([] as QuarterlyStatement[])
+  const [selectedStrategyId, setSelectedStrategyId] = useState('balanced')
   const eventCards = events as GameEventCard[]
+  const strategies = scenarios.strategies as StrategyCoefficients[]
 
   const currentEvent = useMemo(() => eventCards[(state.quarter - 1) % eventCards.length], [eventCards, state.quarter])
   const nextRiskHint = useMemo(() => getNextTurnRiskHint(eventCards, state.quarter), [eventCards, state.quarter])
+  const selectedStrategy = useMemo(
+    () => strategies.find((strategy) => strategy.id === selectedStrategyId) ?? strategies[0],
+    [selectedStrategyId, strategies]
+  )
+
+  const annualReports = useMemo(() => {
+    const byYear = new Map<number, {
+      plRevenue: number
+      plNetIncome: number
+      bsCash: number
+      bsDebt: number
+      cfOperating: number
+      cfFinancing: number
+    }>()
+
+    statementHistory.forEach((entry) => {
+      const fiscalYear = Math.ceil(entry.quarter / 4)
+      const current = byYear.get(fiscalYear)
+      if (!current) {
+        byYear.set(fiscalYear, {
+          plRevenue: entry.statements.pl.revenue,
+          plNetIncome: entry.statements.pl.netIncome,
+          bsCash: entry.statements.bs.cash,
+          bsDebt: entry.statements.bs.debt,
+          cfOperating: entry.statements.cf.operatingCashFlow,
+          cfFinancing: entry.statements.cf.financingCashFlow
+        })
+        return
+      }
+
+      current.plRevenue += entry.statements.pl.revenue
+      current.plNetIncome += entry.statements.pl.netIncome
+      current.bsCash = entry.statements.bs.cash
+      current.bsDebt = entry.statements.bs.debt
+      current.cfOperating += entry.statements.cf.operatingCashFlow
+      current.cfFinancing += entry.statements.cf.financingCashFlow
+    })
+
+    return Array.from(byYear.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([fiscalYear, values]) => ({ fiscalYear, ...values }))
+  }, [statementHistory])
+
   const multiAxisScore = useMemo(() => calculateMultiAxisScore({
     revenueGrowthRate: state.revenue <= 0 ? 0 : (statements.pl.revenue - state.revenue) / Math.max(state.revenue, 1),
     debtToAssetRatio: statements.bs.assets <= 0 ? 1 : statements.bs.debt / statements.bs.assets,
@@ -54,10 +103,11 @@ export default function Dashboard() {
   const nextTurn = () => {
     if (state.isGameOver) return
 
-    const result = processTurn(state, sanitizeDecisions(decisions), currentEvent)
+    const result = processTurn(state, sanitizeDecisions(decisions), currentEvent, selectedStrategy)
     setState(result.nextState)
     setStatements(result.statements)
     setLogs((prev: GameLogEntry[]) => [...prev, result.log])
+    setStatementHistory((prev: QuarterlyStatement[]) => [...prev, { quarter: result.log.quarter, statements: result.statements }])
   }
 
   return (
@@ -71,8 +121,15 @@ export default function Dashboard() {
           <p className="mt-1 text-xs text-amber-200">リスク帯: {nextRiskHint.riskBand} / 影響領域: {nextRiskHint.impactArea}</p>
         </div>
       )}
-      <DecisionPanel decisions={decisions} onChange={(next) => setDecisions(sanitizeDecisions(next))} onNextTurn={nextTurn} />
-      <FinancialStatements statements={statements} />
+      <DecisionPanel
+        decisions={decisions}
+        onChange={(next) => setDecisions(sanitizeDecisions(next))}
+        onNextTurn={nextTurn}
+        strategies={strategies}
+        selectedStrategyId={selectedStrategyId}
+        onStrategyChange={setSelectedStrategyId}
+      />
+      <FinancialStatements statements={statements} annualReports={annualReports} />
       <TutorialPanel quarter={state.quarter} />
       <GameLog logs={logs} />
       {state.quarter > 12 && (
