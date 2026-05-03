@@ -17,6 +17,8 @@ import type { CompanyState, EventCard as GameEventCard, GameLogEntry, StrategyCo
 import type { Decisions } from '@/types/decision'
 import type { FinancialStatements as FS } from '@/types/finance'
 
+type QuarterlyStatement = { quarter: number; statements: FS }
+
 const initialDecisions: Decisions = { adSpend: 300000, productionUnits: 3000, hireCount: 0, rAndDSpend: 200000, price: 5000, raiseEquity: false, borrowDebt: 0, repayDebt: 0 }
 const blankStatements: FS = { pl: { revenue: 0, cogs: 0, grossProfit: 0, payroll: 0, adSpend: 0, rAndD: 0, operatingProfit: 0, interestExpense: 0, netIncome: 0 }, bs: { cash: initialState.cash, inventory: 0, assets: initialState.cash, debt: initialState.debt, equity: initialState.valuation }, cf: { operatingCashFlow: 0, investingCashFlow: 0, financingCashFlow: 0, netCashFlow: 0 } }
 
@@ -41,6 +43,7 @@ export default function Dashboard() {
   const [decisions, setDecisions] = useState(initialDecisions as Decisions)
   const [statements, setStatements] = useState(blankStatements as FS)
   const [logs, setLogs] = useState([] as GameLogEntry[])
+  const [statementHistory, setStatementHistory] = useState([] as QuarterlyStatement[])
   const [selectedStrategyId, setSelectedStrategyId] = useState('balanced')
   const eventCards = events as GameEventCard[]
   const strategies = scenarios.strategies as StrategyCoefficients[]
@@ -51,6 +54,44 @@ export default function Dashboard() {
     () => strategies.find((strategy) => strategy.id === selectedStrategyId) ?? strategies[0],
     [selectedStrategyId, strategies]
   )
+
+  const annualReports = useMemo(() => {
+    const byYear = new Map<number, {
+      plRevenue: number
+      plNetIncome: number
+      bsCash: number
+      bsDebt: number
+      cfOperating: number
+      cfFinancing: number
+    }>()
+
+    statementHistory.forEach((entry: QuarterlyStatement) => {
+      const fiscalYear = Math.ceil(entry.quarter / 4)
+      const current = byYear.get(fiscalYear)
+      if (!current) {
+        byYear.set(fiscalYear, {
+          plRevenue: entry.statements.pl.revenue,
+          plNetIncome: entry.statements.pl.netIncome,
+          bsCash: entry.statements.bs.cash,
+          bsDebt: entry.statements.bs.debt,
+          cfOperating: entry.statements.cf.operatingCashFlow,
+          cfFinancing: entry.statements.cf.financingCashFlow
+        })
+        return
+      }
+
+      current.plRevenue += entry.statements.pl.revenue
+      current.plNetIncome += entry.statements.pl.netIncome
+      current.bsCash = entry.statements.bs.cash
+      current.bsDebt = entry.statements.bs.debt
+      current.cfOperating += entry.statements.cf.operatingCashFlow
+      current.cfFinancing += entry.statements.cf.financingCashFlow
+    })
+
+    return Array.from(byYear.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([fiscalYear, values]) => ({ fiscalYear, ...values }))
+  }, [statementHistory])
 
   const multiAxisScore = useMemo(() => calculateMultiAxisScore({
     revenueGrowthRate: state.revenue <= 0 ? 0 : (statements.pl.revenue - state.revenue) / Math.max(state.revenue, 1),
@@ -66,6 +107,7 @@ export default function Dashboard() {
     setState(result.nextState)
     setStatements(result.statements)
     setLogs((prev: GameLogEntry[]) => [...prev, result.log])
+    setStatementHistory((prev: QuarterlyStatement[]) => [...prev, { quarter: result.log.quarter, statements: result.statements }])
   }
 
   return (
@@ -87,7 +129,7 @@ export default function Dashboard() {
         selectedStrategyId={selectedStrategyId}
         onStrategyChange={setSelectedStrategyId}
       />
-      <FinancialStatements statements={statements} />
+      <FinancialStatements statements={statements} annualReports={annualReports} />
       <TutorialPanel quarter={state.quarter} />
       <GameLog logs={logs} />
       {state.quarter > 12 && (
