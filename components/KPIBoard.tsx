@@ -1,4 +1,4 @@
-import { Calendar, Banknote, TrendingUp, TrendingDown, Building2 } from '@/components/icons'
+import { Calendar, Banknote, TrendingUp, TrendingDown, Building2, Users, Package } from '@/components/icons'
 import type { LucideIcon } from '@/components/icons'
 
 type KPIBoardProps = {
@@ -7,6 +7,8 @@ type KPIBoardProps = {
   revenue: number
   debt: number
   valuation: number
+  employees: number
+  inventory: number
 }
 
 const yen = (v: number) => new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY', maximumFractionDigits: 0 }).format(v)
@@ -39,7 +41,7 @@ function MetricTile({
   )
 }
 
-export default function KPIBoard({ quarter, cash, revenue, debt, valuation }: KPIBoardProps) {
+export default function KPIBoard({ quarter, cash, revenue, debt, valuation, employees, inventory }: KPIBoardProps) {
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
       <h2 className="mb-3 text-lg font-semibold">KPI</h2>
@@ -48,6 +50,8 @@ export default function KPIBoard({ quarter, cash, revenue, debt, valuation }: KP
         <MetricTile label="現金" value={yen(cash)} valueClass={cashColor(cash)} icon={Banknote} />
         <MetricTile label="売上" value={yen(revenue)} icon={TrendingUp} />
         <MetricTile label="有利子負債" value={yen(debt)} valueClass={debt > 0 ? 'text-amber-300' : 'text-slate-100'} icon={TrendingDown} />
+        <MetricTile label="社員数" value={`${employees}人`} icon={Users} />
+        <MetricTile label="在庫数" value={`${inventory.toLocaleString()}件`} icon={Package} />
         <div className="col-span-2 rounded-lg bg-slate-800 px-3 py-2">
           <div className="flex items-center gap-1.5">
             <Building2 className="h-3 w-3 text-slate-400" />

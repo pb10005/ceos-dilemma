@@ -64,3 +64,17 @@ export type StrategyCoefficients = {
   payrollMultiplier: number
   valuationMultiplier: number
 }
+
+export type OperationalMetrics = {
+  demand: number
+  adDemandEffect: number
+  adSpend: number
+  unitsSold: number
+  beginningInventory: number
+  productionUnits: number
+  endingInventoryUnits: number
+  employeesBefore: number
+  hireCount: number
+  employeesAfter: number
+  grossMarginPct: number
+}
