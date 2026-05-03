@@ -65,7 +65,7 @@ export default function Dashboard() {
       cfFinancing: number
     }>()
 
-    statementHistory.forEach((entry) => {
+    statementHistory.forEach((entry: QuarterlyStatement) => {
       const fiscalYear = Math.ceil(entry.quarter / 4)
       const current = byYear.get(fiscalYear)
       if (!current) {
