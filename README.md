@@ -49,6 +49,8 @@ npm run test:e2e
 ```
 
 ## 次の実装候補（MVP後）
+- 詳細タスク分解: `docs/game-design-task-breakdown.md`
+
 1. Playwright への移行（現状は Node ベースE2E）
 2. レスポンシブ詳細調整（モバイル時の情報密度最適化）
 3. 表示フォーマット共通化（通貨・比率フォーマッタの集約）
