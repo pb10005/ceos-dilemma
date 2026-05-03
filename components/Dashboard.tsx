@@ -8,6 +8,7 @@ import KPIBoard from './KPIBoard'
 import GameLog from './GameLog'
 import TutorialPanel from './TutorialPanel'
 import TrendChart from './TrendChart'
+import TurnResult from './TurnResult'
 import { BarChart3, Lightbulb, History, Cloud, ShoppingCart, Wrench, AlertTriangle, XCircle } from '@/components/icons'
 import type { LucideIcon } from '@/components/icons'
 import initialState from '@/data/initialCompany.json'
@@ -16,7 +17,7 @@ import scenarios from '@/data/scenarios.json'
 import { processTurn } from '@/lib/gameEngine'
 import { getNextTurnRiskHint } from '@/lib/gameEngine'
 import { calculateMultiAxisScore } from '@/lib/finance'
-import type { CompanyState, EventCard as GameEventCard, GameLogEntry, StrategyCoefficients } from '@/types/game'
+import type { CompanyState, EventCard as GameEventCard, GameLogEntry, StrategyCoefficients, OperationalMetrics } from '@/types/game'
 import type { Decisions } from '@/types/decision'
 import type { FinancialStatements as FS } from '@/types/finance'
 
@@ -73,6 +74,7 @@ export default function Dashboard() {
   const [statementHistory, setStatementHistory] = useState([] as QuarterlyStatement[])
   const [selectedStrategyId, setSelectedStrategyId] = useState('balanced')
   const [activeTab, setActiveTab] = useState('status' as TabId)
+  const [operationalMetrics, setOperationalMetrics] = useState(null as OperationalMetrics | null)
   const eventCards = events as GameEventCard[]
   const strategies = scenarios.strategies as StrategyCoefficients[]
 
@@ -147,6 +149,7 @@ export default function Dashboard() {
     setLogs([])
     setStatementHistory([])
     setSelectedStrategyId('balanced')
+    setOperationalMetrics(null)
   }
 
   const nextTurn = () => {
@@ -157,6 +160,7 @@ export default function Dashboard() {
     setStatements(result.statements)
     setLogs((prev: GameLogEntry[]) => [...prev, result.log])
     setStatementHistory((prev: QuarterlyStatement[]) => [...prev, { quarter: result.log.quarter, statements: result.statements }])
+    setOperationalMetrics(result.operationalMetrics)
   }
 
   const industryPreset = (
@@ -232,7 +236,8 @@ export default function Dashboard() {
 
         {activeTab === 'status' && (
           <div className="space-y-4">
-            <KPIBoard quarter={state.quarter} cash={state.cash} revenue={state.revenue} debt={state.debt} valuation={state.valuation} />
+            <KPIBoard quarter={state.quarter} cash={state.cash} revenue={state.revenue} debt={state.debt} valuation={state.valuation} employees={state.employees} inventory={state.inventory} />
+            {operationalMetrics && <TurnResult metrics={operationalMetrics} />}
             <EventCard event={currentEvent} />
             {nextRiskHint && (
               <div className="rounded-xl border border-amber-700 bg-amber-950/40 p-4 text-sm">
@@ -286,8 +291,13 @@ export default function Dashboard() {
       {/* デスクトップレイアウト（md:以上） */}
       <section className="hidden gap-4 md:grid md:grid-cols-2">
         {industryPreset}
-        <KPIBoard quarter={state.quarter} cash={state.cash} revenue={state.revenue} debt={state.debt} valuation={state.valuation} />
+        <KPIBoard quarter={state.quarter} cash={state.cash} revenue={state.revenue} debt={state.debt} valuation={state.valuation} employees={state.employees} inventory={state.inventory} />
         <EventCard event={currentEvent} />
+        {operationalMetrics && (
+          <div className="md:col-span-2">
+            <TurnResult metrics={operationalMetrics} />
+          </div>
+        )}
         {nextRiskHint && (
           <div className="rounded-xl border border-amber-700 bg-amber-950/40 p-4 text-sm">
             <div className="mb-1 flex items-center gap-2">

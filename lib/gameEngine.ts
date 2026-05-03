@@ -1,4 +1,4 @@
-import type { CompanyState, EventCard, GameLogEntry, StrategyCoefficients } from '@/types/game'
+import type { CompanyState, EventCard, GameLogEntry, StrategyCoefficients, OperationalMetrics } from '@/types/game'
 import type { EventHint } from '@/types/game'
 import type { Decisions } from '@/types/decision'
 import type { FinancialStatements } from '@/types/finance'
@@ -36,7 +36,7 @@ export const processTurn = (
   decisions: Decisions,
   event: EventCard,
   strategy: StrategyCoefficients = DEFAULT_STRATEGY
-): { nextState: CompanyState; statements: FinancialStatements; log: GameLogEntry } => {
+): { nextState: CompanyState; statements: FinancialStatements; log: GameLogEntry; operationalMetrics: OperationalMetrics } => {
   const demandMultiplier = event.effect.demandMultiplier ?? 1
   const cogsMultiplier = event.effect.cogsMultiplier ?? 1
   const interestRate = BASE_INTEREST_RATE + (event.effect.interestRateDelta ?? 0)
@@ -120,7 +120,21 @@ export const processTurn = (
     learningPoint: event.learningPoint
   }
 
-  return { nextState, statements, log }
+  const operationalMetrics: OperationalMetrics = {
+    demand,
+    adDemandEffect,
+    adSpend: decisions.adSpend,
+    unitsSold,
+    beginningInventory: state.inventory,
+    productionUnits: decisions.productionUnits,
+    endingInventoryUnits,
+    employeesBefore: state.employees,
+    hireCount: decisions.hireCount,
+    employeesAfter: Math.max(1, state.employees + decisions.hireCount),
+    grossMarginPct: revenue > 0 ? (grossProfit / revenue) * 100 : 0,
+  }
+
+  return { nextState, statements, log, operationalMetrics }
 }
 
 export const getNextTurnRiskHint = (events: EventCard[], currentQuarter: number): EventHint | null => {
