@@ -30,3 +30,27 @@ test('next turn hint corresponds to the actual next event', () => {
   assert.equal(hint.nextEventId, events[1].id)
   assert.equal(hint.hint, events[1].hint)
 })
+
+test('strategy coefficients create KPI differences in a 12Q simulation', () => {
+  const decisions = { adSpend: 500000, productionUnits: 4500, hireCount: 1, rAndDSpend: 250000, price: 4800, raiseEquity: false, borrowDebt: 0, repayDebt: 0 }
+  const growth = {
+    id: 'growth', name: '成長重視', demandBaseMultiplier: 1.08, adEffectMultiplier: 1.25,
+    unitCostMultiplier: 1.08, payrollMultiplier: 1.12, valuationMultiplier: 1.2
+  }
+  const efficiency = {
+    id: 'efficiency', name: '収益重視', demandBaseMultiplier: 0.94, adEffectMultiplier: 0.9,
+    unitCostMultiplier: 0.9, payrollMultiplier: 0.92, valuationMultiplier: 0.95
+  }
+
+  let growthState = { ...initialState }
+  let efficiencyState = { ...initialState }
+
+  for (let i = 0; i < 12; i += 1) {
+    growthState = processTurn(growthState, decisions, events[i % events.length], growth).nextState
+    efficiencyState = processTurn(efficiencyState, decisions, events[i % events.length], efficiency).nextState
+  }
+
+  assert.notEqual(growthState.revenue, efficiencyState.revenue)
+  assert.notEqual(growthState.cash, efficiencyState.cash)
+  assert.notEqual(growthState.valuation, efficiencyState.valuation)
+})
