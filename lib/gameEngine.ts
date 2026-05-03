@@ -19,6 +19,7 @@ const UNIT_COST = 1200
 const SALARY_PER_EMPLOYEE_PER_QUARTER = 900000
 const BASE_DEMAND = 4000
 const BASE_INTEREST_RATE = 0.01
+const BANK_WARNING_DEBT_TO_EBITDA_THRESHOLD = 4
 const EQUITY_RAISE_AMOUNT = 5000000
 const DEFAULT_STRATEGY: StrategyCoefficients = {
   id: 'balanced',
@@ -72,7 +73,25 @@ export const processTurn = (
     cf: { operatingCashFlow, investingCashFlow, financingCashFlow, netCashFlow: operatingCashFlow + investingCashFlow + financingCashFlow }
   }
 
-  const isGameOver = endingCash < 0
+  const ebitda = operatingProfit
+  const debtToEbitda = ebitda > 0 ? nextDebt / ebitda : Number.POSITIVE_INFINITY
+  const bankWarning = debtToEbitda >= BANK_WARNING_DEBT_TO_EBITDA_THRESHOLD
+    ? `銀行警告: 借入金/EBITDA が ${BANK_WARNING_DEBT_TO_EBITDA_THRESHOLD.toFixed(1)} 倍以上です（現在: ${debtToEbitda === Number.POSITIVE_INFINITY ? '∞' : debtToEbitda.toFixed(2)}倍）`
+    : undefined
+
+  const consecutiveCashShortageQuarters = endingCash < 0
+    ? (state.consecutiveCashShortageQuarters ?? 0) + 1
+    : 0
+
+  const isImmediateCashShortage = endingCash < 0
+  const isConsecutiveShortageBankruptcy = consecutiveCashShortageQuarters >= 2
+  const isGameOver = isImmediateCashShortage || isConsecutiveShortageBankruptcy
+  const gameOverReason = isImmediateCashShortage
+    ? '現金残高がマイナスになりました（資金ショート）'
+    : isConsecutiveShortageBankruptcy
+      ? '2四半期連続で現金不足が発生しました（継続的な資金繰り悪化）'
+      : undefined
+
   const nextState: CompanyState = {
     ...state,
     quarter: state.quarter + 1,
@@ -87,8 +106,10 @@ export const processTurn = (
     brandPower: updatedBrand,
     supplyStability: updatedSupplyStability,
     cumulativeProfit: state.cumulativeProfit + netIncome,
+    consecutiveCashShortageQuarters,
+    bankWarning,
     isGameOver,
-    gameOverReason: isGameOver ? '現金残高がマイナスになりました（資金ショート）' : undefined
+    gameOverReason
   }
 
   const log: GameLogEntry = {
