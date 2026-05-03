@@ -38,3 +38,24 @@ export const calculateEndingCash = (
   investingCashFlow: number,
   financingCashFlow: number
 ): number => beginningCash + operatingCashFlow + investingCashFlow + financingCashFlow
+
+export type MultiAxisScore = {
+  growth: number
+  stability: number
+  profitability: number
+  learning: number
+}
+
+const clampScore = (value: number): number => Math.max(0, Math.min(100, Math.round(value)))
+
+export const calculateMultiAxisScore = (metrics: {
+  revenueGrowthRate: number
+  debtToAssetRatio: number
+  operatingMargin: number
+  decisionQuality: number
+}): MultiAxisScore => ({
+  growth: clampScore(metrics.revenueGrowthRate * 100),
+  stability: clampScore((1 - metrics.debtToAssetRatio) * 100),
+  profitability: clampScore(metrics.operatingMargin * 100),
+  learning: clampScore(metrics.decisionQuality * 100)
+})

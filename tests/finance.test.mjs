@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {
   calculateUnitsSold, calculateRevenue, calculateCogs, calculateEndingInventoryUnits,
   calculateInventoryValue, calculateOperatingProfit, calculateNetIncome,
-  calculateOperatingCashFlow, calculateFinancingCashFlow, calculateEndingCash
+  calculateOperatingCashFlow, calculateFinancingCashFlow, calculateEndingCash, calculateMultiAxisScore
 } from '../lib/finance.runtime.mjs'
 
 test('sales and revenue calculations', () => {
@@ -27,4 +27,17 @@ test('profit and cash flow calculations', () => {
   const opCf = calculateOperatingCashFlow(netIncome)
   const finCf = calculateFinancingCashFlow(1000000, 500000, 200000)
   assert.equal(calculateEndingCash(2000000, opCf, -300000, finCf), 4250000)
+})
+
+test('multi-axis score clamps boundary values', () => {
+  const score = calculateMultiAxisScore({
+    revenueGrowthRate: 1.7,
+    debtToAssetRatio: 1.8,
+    operatingMargin: -0.4,
+    decisionQuality: 0.51
+  })
+  assert.equal(score.growth, 100)
+  assert.equal(score.stability, 0)
+  assert.equal(score.profitability, 0)
+  assert.equal(score.learning, 51)
 })
