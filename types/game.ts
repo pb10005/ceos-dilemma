@@ -52,3 +52,13 @@ export type GameLogEntry = {
   summary: string
   learningPoint: string
 }
+
+export type StrategyCoefficients = {
+  id: string
+  name: string
+  demandBaseMultiplier: number
+  adEffectMultiplier: number
+  unitCostMultiplier: number
+  payrollMultiplier: number
+  valuationMultiplier: number
+}

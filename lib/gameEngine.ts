@@ -1,4 +1,4 @@
-import type { CompanyState, EventCard, GameLogEntry } from '@/types/game'
+import type { CompanyState, EventCard, GameLogEntry, StrategyCoefficients } from '@/types/game'
 import type { EventHint } from '@/types/game'
 import type { Decisions } from '@/types/decision'
 import type { FinancialStatements } from '@/types/finance'
@@ -20,23 +20,35 @@ const SALARY_PER_EMPLOYEE_PER_QUARTER = 900000
 const BASE_DEMAND = 4000
 const BASE_INTEREST_RATE = 0.01
 const EQUITY_RAISE_AMOUNT = 5000000
+const DEFAULT_STRATEGY: StrategyCoefficients = {
+  id: 'balanced',
+  name: 'バランス型',
+  demandBaseMultiplier: 1,
+  adEffectMultiplier: 1,
+  unitCostMultiplier: 1,
+  payrollMultiplier: 1,
+  valuationMultiplier: 1
+}
 
 export const processTurn = (
   state: CompanyState,
   decisions: Decisions,
-  event: EventCard
+  event: EventCard,
+  strategy: StrategyCoefficients = DEFAULT_STRATEGY
 ): { nextState: CompanyState; statements: FinancialStatements; log: GameLogEntry } => {
   const demandMultiplier = event.effect.demandMultiplier ?? 1
   const cogsMultiplier = event.effect.cogsMultiplier ?? 1
   const interestRate = BASE_INTEREST_RATE + (event.effect.interestRateDelta ?? 0)
 
-  const demand = Math.max(0, Math.floor((BASE_DEMAND + decisions.adSpend / 50000 + state.brandPower * 30) * demandMultiplier))
+  const baseDemand = BASE_DEMAND * strategy.demandBaseMultiplier
+  const adDemandEffect = (decisions.adSpend / 50000) * strategy.adEffectMultiplier
+  const demand = Math.max(0, Math.floor((baseDemand + adDemandEffect + state.brandPower * 30) * demandMultiplier))
   const unitsSold = calculateUnitsSold(demand, state.inventory, decisions.productionUnits)
 
   const revenue = calculateRevenue(unitsSold, decisions.price)
-  const cogs = calculateCogs(unitsSold, UNIT_COST, cogsMultiplier)
+  const cogs = calculateCogs(unitsSold, UNIT_COST * strategy.unitCostMultiplier, cogsMultiplier)
   const grossProfit = revenue - cogs
-  const payroll = (state.employees + decisions.hireCount) * SALARY_PER_EMPLOYEE_PER_QUARTER
+  const payroll = (state.employees + decisions.hireCount) * SALARY_PER_EMPLOYEE_PER_QUARTER * strategy.payrollMultiplier
   const operatingProfit = calculateOperatingProfit(grossProfit, payroll, decisions.adSpend, decisions.rAndDSpend)
   const interestExpense = state.debt * interestRate
   const netIncome = calculateNetIncome(operatingProfit, interestExpense)
@@ -70,7 +82,7 @@ export const processTurn = (
     debt: nextDebt,
     equityRaised: state.equityRaised + equityCashIn,
     sharesOutstanding: state.sharesOutstanding + (decisions.raiseEquity ? 2500 : 0),
-    valuation: Math.max(0, state.valuation + netIncome * 8),
+    valuation: Math.max(0, state.valuation + netIncome * 8 * strategy.valuationMultiplier),
     employees: Math.max(1, state.employees + decisions.hireCount),
     brandPower: updatedBrand,
     supplyStability: updatedSupplyStability,

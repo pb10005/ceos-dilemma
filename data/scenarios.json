@@ -7,5 +7,34 @@
     "minCash": 10000000,
     "minCumulativeRevenue": 200000000
   },
-  "guidedQuarters": [1, 2, 3]
+  "guidedQuarters": [1, 2, 3],
+  "strategies": [
+    {
+      "id": "balanced",
+      "name": "バランス型",
+      "demandBaseMultiplier": 1,
+      "adEffectMultiplier": 1,
+      "unitCostMultiplier": 1,
+      "payrollMultiplier": 1,
+      "valuationMultiplier": 1
+    },
+    {
+      "id": "growth",
+      "name": "成長重視",
+      "demandBaseMultiplier": 1.08,
+      "adEffectMultiplier": 1.25,
+      "unitCostMultiplier": 1.08,
+      "payrollMultiplier": 1.12,
+      "valuationMultiplier": 1.2
+    },
+    {
+      "id": "efficiency",
+      "name": "収益重視",
+      "demandBaseMultiplier": 0.94,
+      "adEffectMultiplier": 0.9,
+      "unitCostMultiplier": 0.9,
+      "payrollMultiplier": 0.92,
+      "valuationMultiplier": 0.95
+    }
+  ]
 }
