@@ -10,12 +10,15 @@ type Props = {
   strategies: StrategyCoefficients[]
   selectedStrategyId: string
   onStrategyChange: (strategyId: string) => void
+  productQuality: number
 }
 
 // gameEngine.ts と同値を保つ定数
 const UNIT_COST_BASE = 1200
 const SALARY_BASE = 900000
 const AD_DEMAND_BASE = 50000
+const AD_BRAND_BASE = 300000
+const RND_QUALITY_BASE = 2000000
 
 function formatPct(multiplier: number): string {
   const delta = Math.round((multiplier - 1) * 100)
@@ -63,23 +66,33 @@ const NumberInput = ({
   </label>
 )
 
-export default function DecisionPanel({ decisions, onChange, onNextTurn, strategies, selectedStrategyId, onStrategyChange }: Props) {
+export default function DecisionPanel({ decisions, onChange, onNextTurn, strategies, selectedStrategyId, onStrategyChange, productQuality }: Props) {
   const selectedStrategy = strategies.find((strategy) => strategy.id === selectedStrategyId)
   const s = selectedStrategy
 
   const effectiveAdDemand = s ? Math.floor((decisions.adSpend / AD_DEMAND_BASE) * s.adEffectMultiplier) : 0
+  const adBrandGain = decisions.adSpend / AD_BRAND_BASE
   const effectiveUnitCost = s ? Math.floor(UNIT_COST_BASE * s.unitCostMultiplier) : UNIT_COST_BASE
   const grossMarginPerUnit = decisions.price - effectiveUnitCost
   const extraPayroll = s && decisions.hireCount !== 0
     ? Math.abs(decisions.hireCount) * SALARY_BASE * s.payrollMultiplier
     : 0
+  const rndQualityGain = decisions.rAndDSpend / RND_QUALITY_BASE
+  const nextQuality = productQuality + rndQualityGain
+  const nextCostMultiplier = Math.max(0.70, 1 - Math.max(0, nextQuality - 50) / 200)
+  const costReductionPct = Math.round((1 - nextCostMultiplier) * 100)
 
-  const adHint = s ? `→ 需要貢献 +${effectiveAdDemand.toLocaleString()}件` : undefined
+  const adHint = s
+    ? `→ 需要 +${effectiveAdDemand.toLocaleString()}件 / ブランド +${adBrandGain.toFixed(1)}`
+    : undefined
   const productionHint = s ? `→ 原価/個 ¥${effectiveUnitCost.toLocaleString()}` : undefined
   const hireHint = s && decisions.hireCount !== 0
     ? `→ 人件費${decisions.hireCount > 0 ? '増' : '減'} ¥${Math.floor(extraPayroll).toLocaleString()}/Q`
     : undefined
   const priceHint = `→ 粗利/個 ¥${grossMarginPerUnit.toLocaleString()}${grossMarginPerUnit < 0 ? ' ⚠️逆ザヤ' : ''}`
+  const rndHint = rndQualityGain > 0
+    ? `→ 品質 +${rndQualityGain.toFixed(1)} → ${nextQuality.toFixed(1)} / 原価低減 -${costReductionPct}%`
+    : undefined
 
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
@@ -124,7 +137,7 @@ export default function DecisionPanel({ decisions, onChange, onNextTurn, strateg
         <NumberInput label="広告費" value={decisions.adSpend} icon={Megaphone} hint={adHint} onChange={(v) => onChange({ ...decisions, adSpend: v })} />
         <NumberInput label="生産数量" value={decisions.productionUnits} icon={Factory} hint={productionHint} onChange={(v) => onChange({ ...decisions, productionUnits: v })} />
         <NumberInput label="採用人数" min={-5} value={decisions.hireCount} icon={UserPlus} hint={hireHint} onChange={(v) => onChange({ ...decisions, hireCount: v })} />
-        <NumberInput label="R&D費" value={decisions.rAndDSpend} icon={FlaskConical} onChange={(v) => onChange({ ...decisions, rAndDSpend: v })} />
+        <NumberInput label="R&D費" value={decisions.rAndDSpend} icon={FlaskConical} hint={rndHint} onChange={(v) => onChange({ ...decisions, rAndDSpend: v })} />
         <NumberInput label="販売価格" value={decisions.price} icon={Tag} hint={priceHint} onChange={(v) => onChange({ ...decisions, price: v })} />
         <NumberInput label="借入額" value={decisions.borrowDebt} icon={CreditCard} onChange={(v) => onChange({ ...decisions, borrowDebt: v })} />
         <NumberInput label="返済額" value={decisions.repayDebt} icon={ArrowDownCircle} onChange={(v) => onChange({ ...decisions, repayDebt: v })} />

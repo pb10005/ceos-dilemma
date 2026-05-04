@@ -77,4 +77,13 @@ export type OperationalMetrics = {
   hireCount: number
   employeesAfter: number
   grossMarginPct: number
+  repeatDemand: number
+  qualityDemandBoost: number
+  brandPowerBefore: number
+  brandGain: number
+  productQualityBefore: number
+  qualityGain: number
+  customerBaseBefore: number
+  customerGain: number
+  qualityCostMultiplier: number
 }

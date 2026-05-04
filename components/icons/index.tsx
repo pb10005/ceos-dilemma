@@ -25,6 +25,8 @@ import {
   AlertTriangle,
   XCircle,
   Info,
+  Star,
+  UserCheck,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { EventCategory } from '@/types/game'
@@ -56,6 +58,8 @@ export {
   AlertTriangle,
   XCircle,
   Info,
+  Star,
+  UserCheck,
 }
 
 export type { LucideIcon }
