@@ -236,7 +236,7 @@ export default function Dashboard() {
 
         {activeTab === 'status' && (
           <div className="space-y-4">
-            <KPIBoard quarter={state.quarter} cash={state.cash} revenue={state.revenue} debt={state.debt} valuation={state.valuation} employees={state.employees} inventory={state.inventory} />
+            <KPIBoard quarter={state.quarter} cash={state.cash} revenue={state.revenue} debt={state.debt} valuation={state.valuation} employees={state.employees} inventory={state.inventory} brandPower={state.brandPower} productQuality={state.productQuality} customerBase={state.customerBase} />
             {operationalMetrics && <TurnResult metrics={operationalMetrics} />}
             <EventCard event={currentEvent} />
             {nextRiskHint && (
@@ -270,6 +270,7 @@ export default function Dashboard() {
               strategies={strategies}
               selectedStrategyId={selectedStrategyId}
               onStrategyChange={setSelectedStrategyId}
+              productQuality={state.productQuality}
             />
           </div>
         )}
@@ -291,7 +292,7 @@ export default function Dashboard() {
       {/* デスクトップレイアウト（md:以上） */}
       <section className="hidden gap-4 md:grid md:grid-cols-2">
         {industryPreset}
-        <KPIBoard quarter={state.quarter} cash={state.cash} revenue={state.revenue} debt={state.debt} valuation={state.valuation} employees={state.employees} inventory={state.inventory} />
+        <KPIBoard quarter={state.quarter} cash={state.cash} revenue={state.revenue} debt={state.debt} valuation={state.valuation} employees={state.employees} inventory={state.inventory} brandPower={state.brandPower} productQuality={state.productQuality} customerBase={state.customerBase} />
         <EventCard event={currentEvent} />
         {operationalMetrics && (
           <div className="md:col-span-2">
@@ -315,6 +316,7 @@ export default function Dashboard() {
           strategies={strategies}
           selectedStrategyId={selectedStrategyId}
           onStrategyChange={setSelectedStrategyId}
+          productQuality={state.productQuality}
         />
         <FinancialStatements statements={statements} annualReports={annualReports} />
 
