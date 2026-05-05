@@ -6,6 +6,7 @@ import FinancialStatements from './FinancialStatements'
 import EventCard from './EventCard'
 import KPIBoard from './KPIBoard'
 import GameLog from './GameLog'
+import StartScreen from './StartScreen'
 import TutorialPanel from './TutorialPanel'
 import TrendChart from './TrendChart'
 import TurnResult from './TurnResult'
@@ -22,14 +23,64 @@ import type { Decisions } from '@/types/decision'
 import type { FinancialStatements as FS } from '@/types/finance'
 
 type QuarterlyStatement = { quarter: number; statements: FS }
-type IndustryProfile = { id: string; label: string; description: string; stateOverrides: Partial<CompanyState>; icon: LucideIcon }
+type Phase = 'setup' | 'playing'
 type TabId = 'status' | 'decision' | 'history'
+type IndustryProfile = {
+  id: string
+  label: string
+  icon: LucideIcon
+  description: string
+  companyName: string
+  productName: string
+  productTag: string
+  productDescription: string
+  challenge: string
+  stateOverrides: Partial<CompanyState>
+  decisionOverrides: Partial<Decisions>
+}
 
-const initialDecisions: Decisions = { adSpend: 300000, productionUnits: 3000, hireCount: 0, rAndDSpend: 200000, price: 5000, raiseEquity: false, borrowDebt: 0, repayDebt: 0 }
+const baseDecisions: Decisions = { adSpend: 300000, productionUnits: 3000, hireCount: 0, rAndDSpend: 200000, price: 5000, raiseEquity: false, borrowDebt: 0, repayDebt: 0 }
+
 const industryProfiles: IndustryProfile[] = [
-  { id: 'saas', label: 'SaaS', icon: Cloud, description: '高粗利・成長重視。研究開発とブランド投資の影響が大きい。', stateOverrides: { cash: 40000000, valuation: 240000000, customerBase: 1600, productQuality: 70, inventory: 500, supplyStability: 80 } },
-  { id: 'retail', label: '小売', icon: ShoppingCart, description: '在庫と供給安定性が収益に直結。需要変動の影響を受けやすい。', stateOverrides: { cash: 60000000, valuation: 180000000, customerBase: 2500, inventory: 11000, supplyStability: 65, brandPower: 24 } },
-  { id: 'manufacturing', label: '製造', icon: Wrench, description: '設備・在庫・負債管理が重要。供給網ショックに備える。', stateOverrides: { cash: 55000000, valuation: 210000000, customerBase: 1200, inventory: 14000, supplyStability: 72, debt: 20000000 } }
+  {
+    id: 'saas',
+    label: 'SaaS',
+    icon: Cloud,
+    description: '高粗利・成長重視。研究開発とブランド投資の影響が大きい。',
+    companyName: 'NebulaSync株式会社',
+    productName: 'NebulaSync',
+    productTag: 'クラウド型プロジェクト管理SaaS',
+    productDescription: 'リモートワーク需要を追い風に成長するB2B SaaS。月額課金で安定収益を築く一方、プロダクト品質と広告投資が解約率と新規獲得を左右する。',
+    challenge: '急増する競合に対し、R&D投資でプロダクトを差別化しながら、既存顧客のリテンションと新規獲得の両立が急務。',
+    stateOverrides: { cash: 40000000, valuation: 240000000, customerBase: 1600, productQuality: 70, inventory: 500, supplyStability: 80 },
+    decisionOverrides: { adSpend: 500000, productionUnits: 500, rAndDSpend: 500000, price: 5000 },
+  },
+  {
+    id: 'retail',
+    label: '小売',
+    icon: ShoppingCart,
+    description: '在庫と供給安定性が収益に直結。需要変動の影響を受けやすい。',
+    companyName: 'UrbanBasket株式会社',
+    productName: 'URBANBASKET',
+    productTag: '生活雑貨・インテリアECチェーン',
+    productDescription: '実店舗とECを展開する生活雑貨・インテリアブランド。季節変動の激しい需要に合わせた在庫管理と、ブランド力によるリピート獲得が収益の鍵を握る。',
+    challenge: '仕入れコストの高騰と競合ECの台頭に対抗しながら、在庫回転率を高めてキャッシュフローを安定させたい。',
+    stateOverrides: { cash: 60000000, valuation: 180000000, customerBase: 2500, inventory: 11000, supplyStability: 65, brandPower: 24 },
+    decisionOverrides: { adSpend: 300000, productionUnits: 5000, rAndDSpend: 100000, price: 3000 },
+  },
+  {
+    id: 'manufacturing',
+    label: '製造',
+    icon: Wrench,
+    description: '設備・在庫・負債管理が重要。供給網ショックに備える。',
+    companyName: 'ShiftGear株式会社',
+    productName: 'ShiftGear Pro',
+    productTag: '産業用IoTセンサー',
+    productDescription: '製造ライン向け設備監視IoTデバイスメーカー。原価低減と高い製品品質が受注競争力を生む。設備投資を借入金で賄っており、キャッシュフロー管理が経営を安定させる。',
+    challenge: '₂億円の有利子負債を返済しながら、量産効率の改善とR&D投資で競合の低価格攻勢に対抗する。',
+    stateOverrides: { cash: 55000000, valuation: 210000000, customerBase: 1200, inventory: 14000, supplyStability: 72, debt: 20000000 },
+    decisionOverrides: { adSpend: 200000, productionUnits: 4000, rAndDSpend: 300000, price: 8000, repayDebt: 500000 },
+  },
 ]
 
 const tabs: { id: TabId; label: string; icon: LucideIcon }[] = [
@@ -41,6 +92,11 @@ const tabs: { id: TabId; label: string; icon: LucideIcon }[] = [
 const createInitialCompanyState = (profileId: string): CompanyState => {
   const profile = industryProfiles.find((item) => item.id === profileId)
   return { ...(initialState as CompanyState), ...(profile?.stateOverrides ?? {}) }
+}
+
+const createInitialDecisions = (profileId: string): Decisions => {
+  const profile = industryProfiles.find((item) => item.id === profileId)
+  return { ...baseDecisions, ...(profile?.decisionOverrides ?? {}) }
 }
 
 const createBlankStatements = (cash: number, debt: number, valuation: number): FS => ({
@@ -66,9 +122,10 @@ const sanitizeDecisions = (draft: Decisions): Decisions => ({
 })
 
 export default function Dashboard() {
+  const [phase, setPhase] = useState('setup' as Phase)
   const [selectedIndustryId, setSelectedIndustryId] = useState(industryProfiles[0].id)
   const [state, setState] = useState(() => createInitialCompanyState(industryProfiles[0].id))
-  const [decisions, setDecisions] = useState(initialDecisions as Decisions)
+  const [decisions, setDecisions] = useState(() => createInitialDecisions(industryProfiles[0].id))
   const [statements, setStatements] = useState(() => createBlankStatements(state.cash, state.debt, state.valuation))
   const [logs, setLogs] = useState([] as GameLogEntry[])
   const [statementHistory, setStatementHistory] = useState([] as QuarterlyStatement[])
@@ -144,12 +201,18 @@ export default function Dashboard() {
     const nextState = createInitialCompanyState(industryId)
     setSelectedIndustryId(industryId)
     setState(nextState)
-    setDecisions(initialDecisions)
+    setDecisions(createInitialDecisions(industryId))
     setStatements(createBlankStatements(nextState.cash, nextState.debt, nextState.valuation))
     setLogs([])
     setStatementHistory([])
     setSelectedStrategyId('balanced')
     setOperationalMetrics(null)
+  }
+
+  const startGame = () => {
+    resetGame(selectedIndustryId)
+    setActiveTab('status' as TabId)
+    setPhase('playing' as Phase)
   }
 
   const nextTurn = () => {
@@ -163,26 +226,21 @@ export default function Dashboard() {
     setOperationalMetrics(result.operationalMetrics)
   }
 
-  const industryPreset = (
-    <div className="rounded-xl border border-slate-700 bg-slate-900 p-4 md:col-span-2">
-      <h2 className="mb-3 text-lg font-semibold">業種プリセット</h2>
-      <div className="mb-2 flex flex-wrap gap-2">
-        {industryProfiles.map((profile) => {
-          const ProfileIcon = profile.icon
-          return (
-            <button
-              key={profile.id}
-              type="button"
-              onClick={() => resetGame(profile.id)}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-sm ${profile.id === selectedIndustryId ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-200'}`}
-            >
-              <ProfileIcon className="h-4 w-4" />
-              {profile.label}
-            </button>
-          )
-        })}
+  const SelectedIndustryIcon = selectedIndustry.icon
+  const gameHeader = (
+    <div className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 md:col-span-2">
+      <div className="flex items-center gap-2 overflow-hidden">
+        <SelectedIndustryIcon className="h-4 w-4 shrink-0 text-slate-400" />
+        <span className="truncate text-sm font-semibold">{selectedIndustry.companyName}</span>
+        <span className="hidden shrink-0 text-xs text-slate-400 sm:inline">— {selectedIndustry.productTag}</span>
       </div>
-      <p className="text-sm text-slate-300">現在の業種: {selectedIndustry.label} — {selectedIndustry.description}</p>
+      <button
+        type="button"
+        onClick={() => setPhase('setup' as Phase)}
+        className="ml-3 shrink-0 rounded-md bg-slate-800 px-3 py-1 text-xs text-slate-300 hover:bg-slate-700"
+      >
+        タイトルへ戻る
+      </button>
     </div>
   )
 
@@ -207,11 +265,28 @@ export default function Dashboard() {
     </>
   )
 
+  if (phase === 'setup') {
+    const startScreenProfiles = industryProfiles.map((p) => ({
+      ...p,
+      startingCash: p.stateOverrides.cash ?? (initialState as CompanyState).cash,
+      startingDebt: p.stateOverrides.debt ?? 0,
+      startingEmployees: p.stateOverrides.employees ?? (initialState as CompanyState).employees,
+    }))
+    return (
+      <StartScreen
+        profiles={startScreenProfiles}
+        selectedId={selectedIndustryId}
+        onSelect={setSelectedIndustryId}
+        onStart={startGame}
+      />
+    )
+  }
+
   return (
     <>
       {/* モバイルタブナビゲーション */}
       <div className="md:hidden">
-        <div className="mb-4">{industryPreset}</div>
+        <div className="mb-4">{gameHeader}</div>
         <div className="mb-4 space-y-2">{alertsSection}</div>
 
         {/* タブバー */}
@@ -291,7 +366,7 @@ export default function Dashboard() {
 
       {/* デスクトップレイアウト（md:以上） */}
       <section className="hidden gap-4 md:grid md:grid-cols-2">
-        {industryPreset}
+        {gameHeader}
         <KPIBoard quarter={state.quarter} cash={state.cash} revenue={state.revenue} debt={state.debt} valuation={state.valuation} employees={state.employees} inventory={state.inventory} brandPower={state.brandPower} productQuality={state.productQuality} customerBase={state.customerBase} />
         <EventCard event={currentEvent} />
         {operationalMetrics && (
